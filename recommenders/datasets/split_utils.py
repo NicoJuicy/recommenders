@@ -166,10 +166,6 @@ def split_pandas_data_with_ratios(data, ratios, seed=42, shuffle=False):
         splits.append(data.iloc[prev:point])
         prev = point
 
-    # Add split index (this makes splitting by group more efficient).
-    for i in range(len(ratios)):
-        splits[i]["split_index"] = i
-
     return splits
 
 
