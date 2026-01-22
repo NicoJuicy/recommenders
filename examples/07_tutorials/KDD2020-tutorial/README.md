@@ -7,7 +7,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 1. Clone the repository
     ```bash
-    git clone https://github.com/microsoft/recommenders
+    git clone https://github.com/recommenders-team/recommenders
     ```
 
 1. Navigate to the tutorial folder. The materials for the tutorial are located under the directory of `recommenders/examples/07_tutorials/KDD2020-tutorial`.
