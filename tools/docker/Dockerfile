@@ -43,7 +43,7 @@ RUN apt-get update && \
 #####################################################################
 FROM ${COMPUTE} AS deps
 
-# Valid versions: 3.9, 3.10, 3.11, 3.12
+# Valid versions: 3.9, 3.10, 3.11
 ARG PYTHON_VERSION="3.11"
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
