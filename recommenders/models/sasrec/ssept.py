@@ -71,6 +71,26 @@ class SSEPT(SASREC):
             self.seq_max_len, self.hidden_units, 1e-08
         )
 
+        # Re-initialize weights for the new layers
+        self._init_weights()
+
+    def _init_weights(self):
+        """Initialize weights to match TensorFlow/Keras defaults.
+
+        Overrides parent to also initialize user_embedding_layer.
+        """
+        # Call parent initialization
+        super()._init_weights()
+
+        # Initialize user embedding with uniform distribution matching TF default
+        nn.init.uniform_(self.user_embedding_layer.weight, -0.05, 0.05)
+        # Keep padding_idx as zeros
+        with torch.no_grad():
+            self.user_embedding_layer.weight[0].fill_(0)
+
+        # Re-initialize positional embeddings (which has different dim in SSEPT)
+        nn.init.uniform_(self.positional_embedding_layer.weight, -0.05, 0.05)
+
     def forward(self, x, training=True):
         """Model forward pass.
 

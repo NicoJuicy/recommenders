@@ -453,6 +453,36 @@ class SASREC(nn.Module):
             self.seq_max_len, self.embedding_dim, 1e-08
         )
 
+        # Initialize weights to match TensorFlow defaults
+        # Only call if this is SASREC directly (not a subclass like SSEPT)
+        if type(self) is SASREC:
+            self._init_weights()
+
+    def _init_weights(self):
+        """Initialize weights to match TensorFlow/Keras defaults.
+
+        TensorFlow Embedding uses uniform(-0.05, 0.05) by default.
+        TensorFlow Dense uses Glorot uniform initialization.
+        """
+        # Initialize embeddings with uniform distribution matching TF default
+        nn.init.uniform_(self.item_embedding_layer.weight, -0.05, 0.05)
+        # Keep padding_idx as zeros
+        with torch.no_grad():
+            self.item_embedding_layer.weight[0].fill_(0)
+
+        nn.init.uniform_(self.positional_embedding_layer.weight, -0.05, 0.05)
+
+        # Initialize Linear layers (Dense in TF) with Glorot/Xavier uniform
+        for module in self.modules():
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_uniform_(module.weight)
+                if module.bias is not None:
+                    nn.init.zeros_(module.bias)
+            elif isinstance(module, nn.Conv1d):
+                nn.init.xavier_uniform_(module.weight)
+                if module.bias is not None:
+                    nn.init.zeros_(module.bias)
+
     def embedding(self, input_seq):
         """Compute the sequence and positional embeddings.
 
