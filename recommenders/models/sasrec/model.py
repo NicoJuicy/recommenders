@@ -694,15 +694,10 @@ class SASREC(nn.Module):
                 inputs, target = self.create_combined_dataset(u, seq, pos, neg)
 
                 # Convert to tensors and move to device
-                input_seq = torch.LongTensor(inputs["input_seq"]).to(device)
-                positive = torch.LongTensor(inputs["positive"]).to(device)
-                negative = torch.LongTensor(inputs["negative"]).to(device)
-
-                inp = {
-                    "input_seq": input_seq,
-                    "positive": positive,
-                    "negative": negative,
-                }
+                inp = {}
+                for key in ["users", "input_seq", "positive", "negative"]:
+                    if key in inputs:
+                        inp[key] = torch.LongTensor(inputs[key]).to(device)
 
                 optimizer.zero_grad()
                 pos_logits, neg_logits, loss_mask = self(inp, training=True)
@@ -747,9 +742,16 @@ class SASREC(nn.Module):
         """
         return super().train(mode)
 
-    def evaluate(self, dataset):
+    def evaluate(self, dataset, seed=None):
         """
         Evaluation on the test users (users with at least 3 items)
+
+        Args:
+            dataset: The dataset object containing user_train, user_valid, user_test.
+            seed (int, optional): Random seed for reproducibility. If None, results may vary.
+
+        Returns:
+            tuple: (NDCG@10, Hit@10) metrics.
         """
         self.eval()
         device = next(self.parameters()).device
@@ -765,6 +767,9 @@ class SASREC(nn.Module):
         valid_user = 0.0
 
         if usernum > 10000:
+            if seed is not None:
+                random.seed(seed)
+                np.random.seed(seed)
             users = random.sample(range(1, usernum + 1), 10000)
         else:
             users = range(1, usernum + 1)
@@ -811,9 +816,16 @@ class SASREC(nn.Module):
 
         return NDCG / valid_user, HT / valid_user
 
-    def evaluate_valid(self, dataset):
+    def evaluate_valid(self, dataset, seed=None):
         """
         Evaluation on the validation users
+
+        Args:
+            dataset: The dataset object containing user_train, user_valid.
+            seed (int, optional): Random seed for reproducibility. If None, results may vary.
+
+        Returns:
+            tuple: (NDCG@10, Hit@10) metrics.
         """
         self.eval()
         device = next(self.parameters()).device
@@ -828,6 +840,9 @@ class SASREC(nn.Module):
         HT = 0.0
 
         if usernum > 10000:
+            if seed is not None:
+                random.seed(seed)
+                np.random.seed(seed)
             users = random.sample(range(1, usernum + 1), 10000)
         else:
             users = range(1, usernum + 1)

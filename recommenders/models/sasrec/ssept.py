@@ -2,11 +2,9 @@
 # Licensed under the MIT License.
 
 import numpy as np
-from tqdm import tqdm
 import torch
 import torch.nn as nn
 
-from recommenders.utils.timer import Timer
 from recommenders.models.sasrec.model import SASREC, Encoder, LayerNormalization
 from recommenders.models.sasrec.model import pad_sequences
 
@@ -261,83 +259,4 @@ class SSEPT(SASREC):
         target = np.expand_dims(target, axis=-1)
         return inputs, target
 
-    def train_model(self, dataset, sampler, **kwargs):
-        """
-        High level function for model training as well as
-        evaluation on the validation and test dataset.
-        Overrides parent to include users in the input tensors.
-        """
-        num_epochs = kwargs.get("num_epochs", 10)
-        batch_size = kwargs.get("batch_size", 128)
-        lr = kwargs.get("learning_rate", 0.001)
-        val_epoch = kwargs.get("val_epoch", 5)
-
-        num_steps = int(len(dataset.user_train) / batch_size)
-
-        # Device setup
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.to(device)
-
-        optimizer = torch.optim.Adam(
-            self.parameters(),
-            lr=lr,
-            betas=(0.9, 0.999),
-            eps=1e-7,
-            weight_decay=self.l2_reg,
-        )
-
-        T = 0.0
-        t0 = Timer()
-        t0.start()
-
-        for epoch in range(1, num_epochs + 1):
-            step_loss = []
-            self.train()  # Set training mode
-
-            for _ in tqdm(
-                range(num_steps), total=num_steps, ncols=70, leave=False, unit="b"
-            ):
-                u, seq, pos, neg = sampler.next_batch()
-
-                inputs, target = self.create_combined_dataset(u, seq, pos, neg)
-
-                # Convert to tensors and move to device
-                users = torch.LongTensor(inputs["users"]).to(device)
-                input_seq = torch.LongTensor(inputs["input_seq"]).to(device)
-                positive = torch.LongTensor(inputs["positive"]).to(device)
-                negative = torch.LongTensor(inputs["negative"]).to(device)
-
-                inp = {
-                    "users": users,
-                    "input_seq": input_seq,
-                    "positive": positive,
-                    "negative": negative,
-                }
-
-                optimizer.zero_grad()
-                pos_logits, neg_logits, loss_mask = self(inp, training=True)
-                loss = self.loss_function(pos_logits, neg_logits, loss_mask)
-                loss.backward()
-                optimizer.step()
-
-                step_loss.append(loss.item())
-
-            if epoch % val_epoch == 0:
-                t0.stop()
-                t1 = t0.interval
-                T += t1
-                print("Evaluating...")
-                t_test = self.evaluate(dataset)
-                t_valid = self.evaluate_valid(dataset)
-                print(
-                    f"\nepoch: {epoch}, time: {T}, valid (NDCG@10: {t_valid[0]}, HR@10: {t_valid[1]})"
-                )
-                print(
-                    f"epoch: {epoch}, time: {T},  test (NDCG@10: {t_test[0]}, HR@10: {t_test[1]})"
-                )
-                t0.start()
-
-        t_test = self.evaluate(dataset)
-        print(f"\nepoch: {epoch}, test (NDCG@10: {t_test[0]}, HR@10: {t_test[1]})")
-
-        return t_test
+    # train_model is inherited from SASREC (handles "users" key dynamically)
