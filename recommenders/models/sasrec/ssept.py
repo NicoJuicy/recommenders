@@ -234,30 +234,6 @@ class SSEPT(SASREC):
 
         return test_logits
 
-    def loss_function(self, pos_logits, neg_logits, istarget):
-        """Losses are calculated separately for the positive and negative
-        items based on the corresponding logits. A mask is included to
-        take care of the zero items (added for padding).
-
-        Args:
-            pos_logits (torch.Tensor): Logits of the positive examples.
-            neg_logits (torch.Tensor): Logits of the negative examples.
-            istarget (torch.Tensor): Mask for nonzero targets.
-
-        Returns:
-            torch.Tensor: Loss.
-        """
-        pos_logits = pos_logits[:, 0]
-        neg_logits = neg_logits[:, 0]
-
-        # ignore padding items (0)
-        loss = torch.sum(
-            -torch.log(torch.sigmoid(pos_logits) + 1e-24) * istarget
-            - torch.log(1 - torch.sigmoid(neg_logits) + 1e-24) * istarget
-        ) / torch.sum(istarget)
-
-        # L2 regularization is handled by optimizer weight_decay
-        return loss
 
     def create_combined_dataset(self, u, seq, pos, neg):
         """
